@@ -1,6 +1,7 @@
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
+from gymnasium import register
 
 # 行動: 0:上(-1, 0), 1:右(0, 1), 2:下(1, 0), 3:左(0, -1), 4:待機(0, 0)
 MOVES = np.array([(-1, 0), (0, 1), (1, 0), (0, -1), (0, 0)])
@@ -28,7 +29,6 @@ class PredatorPreyEnv(gym.Env):
         self.naction = 5
 
         self.TIMESTEP_PRNALTY = -0.05
-        self.PREY_REWARD = 0.0
         self.POS_PREY_REWARD = 0.05
 
         self.BASE = dim * dim
@@ -41,7 +41,7 @@ class PredatorPreyEnv(gym.Env):
         self.obs_dim = self.window * self.window * self.vocab_size
         self.observation_space = spaces.Tuple(
             tuple(
-                spaces.Box(0.0, float(n_agents, shape=(self.obs_dim,), dtype=np.float32))
+                spaces.Box(0.0, float(n_agents), shape=(self.obs_dim,), dtype=np.float32)
                 for _ in range(n_agents)
             )
         )
@@ -122,6 +122,7 @@ class PredatorPreyEnv(gym.Env):
         self.reached_prey[on_prey] = 1
 
         if n_on == self.n_agents:
+            reward[on_prey] = self.POS_PREY_REWARD * self.n_agents
             self.episode_over = True
 
         return reward
@@ -134,3 +135,8 @@ class PredatorPreyEnv(gym.Env):
             g[y][x] = "*" if g[y][x] == "X" else "P"  # * は同じマスに重なっている状態
         print("\n".join(" ".join(row) for row in g))
 
+register(
+    id="PredatorPrey",
+    entry_point="envs.predator_prey:PredatorPreyEnv",
+    disable_env_checker=True,
+)

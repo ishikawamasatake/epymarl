@@ -1,5 +1,5 @@
 import torch.nn as nn
-import torch.nn.funcational as F
+import torch.nn.functional as F
 
 class CommNetAgent(nn.Module):
     def __init__(self, input_shape, args):

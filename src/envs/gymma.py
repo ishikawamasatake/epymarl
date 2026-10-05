@@ -1,3 +1,4 @@
+# 13行目にPredatorPrey環境のimport
 from collections.abc import Iterable
 import warnings
 
@@ -9,6 +10,7 @@ import numpy as np
 from .multiagentenv import MultiAgentEnv
 from .wrappers import FlattenObservation
 import envs.pretrained as pretrained  # noqa
+import envs.predator_prey  # noqa
 
 try:
     from .pz_wrapper import PettingZooWrapper  # noqa
