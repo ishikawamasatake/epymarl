@@ -28,8 +28,8 @@ class PredatorPreyEnv(gym.Env):
         self.n_agents = n_agents
         self.naction = 5
 
-        self.TIMESTEP_PRNALTY = -0.05
-        self.POS_PREY_REWARD = 0.05
+        self.TIMESTEP_PRNALTY = -0.01
+        self.POS_PREY_REWARD = 0.1
 
         self.BASE = dim * dim
         self.OUTSIDE_CLASS = self.BASE + 1
@@ -39,6 +39,8 @@ class PredatorPreyEnv(gym.Env):
 
         self.window = 2 * vision + 1
         self.obs_dim = self.window * self.window * self.vocab_size
+        # 環境の真の状態（MAPPOのCritic用）
+        self.state_size = (n_agents + 1) * self.BASE
         self.observation_space = spaces.Tuple(
             tuple(
                 spaces.Box(0.0, float(n_agents), shape=(self.obs_dim,), dtype=np.float32)
@@ -59,7 +61,6 @@ class PredatorPreyEnv(gym.Env):
 
         self.predator_loc = None #(n_agents, 2)
         self.prey_loc = None #(1, 2)
-        self.reached_prey = None
         self.episode_over = False
         self.success = 0
 
@@ -67,7 +68,6 @@ class PredatorPreyEnv(gym.Env):
         super().reset(seed=seed)
         self.episode_over = False
         self.success = 0
-        self.reached_prey = np.zeros(self.n_agents)
 
         # predatorとpreyは互いに異なるマスから開始
         idx = self.np_random.choice(self.BASE, self.n_agents + 1, replace=False)
@@ -92,6 +92,18 @@ class PredatorPreyEnv(gym.Env):
         info = {"success": self.success}
         return obs, reward.tolist(), self.episode_over, False, info
 
+    def get_state(self):
+        """中央集権criticに渡す環境の真の状態
+        各エージェントのone-hot + prey位置のone-hotベクトル
+        """
+        B = self.BASE
+        s = np.zeros(self.state_size, dtype=np.float32)
+        for i, (y, x) in enumerate(self.predator_loc):
+            s[i * B + y * self.dim + x] = 1.0
+        y, x = self.prey_loc[0]
+        s[self.n_agents * B + y * self.dim + x] = 1.0
+        return s
+        
     def _get_obs(self):
         v, k = self.vision, self.window
         pred_count = np.zeros(self.grid.shape, dtype=np.float32)
@@ -119,11 +131,11 @@ class PredatorPreyEnv(gym.Env):
         n_on = on_prey.size
 
         reward[on_prey] = 0
-        self.reached_prey[on_prey] = 1
 
         if n_on == self.n_agents:
             reward[on_prey] = self.POS_PREY_REWARD * self.n_agents
             self.episode_over = True
+            self.success = 1
 
         return reward
 

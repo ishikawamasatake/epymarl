@@ -113,6 +113,9 @@ class GymmaWrapper(MultiAgentEnv):
         return flatdim(self.longest_observation_space)
 
     def get_state(self):
+        """環境の真の状態を提供する場合それを返す，なければ観測の結合を返す"""
+        if hasattr(self._env.unwrapped, "get_state") and hasattr(self._env.unwrapped, "state_size"):
+            return np.asarray(self._env.unwrapped.get_state(), dtype=np.float32)
         return np.concatenate(self._obs, axis=0).astype(np.float32)
 
     def get_state_size(self):
